@@ -6,6 +6,7 @@ form[] secondPartnerClothes
 actor partner
 actor secondPartner
 
+bool playerIsFemale = false
 bool partnerIsFemale = false
 bool secondPartnerIsFemale = false
 
@@ -20,25 +21,63 @@ event oninit()
 endevent
 
 event OstimStart(string eventname, string strarg, float numarg, form sender)
+	; if OSmp is disabled in MCM, don't run this event
+	if OsmpMCM.toggleDisableOSmp
+		return
+	endif
+
+	Actor[] actors = ostim.GetActors()
+
+	; if player is not in scene, skip, OSmp won't run on NPC scenes
+	if actors[0] != PlayerRef && actors[1] != PlayerRef
+		return
+	endif
+
 	undressAtAnimStart = ostim.AlwaysUndressAtAnimStart
 
 	partner = ostim.GetSexPartner(PlayerRef)
 	secondPartner = ostim.GetThirdActor()
 
+	playerIsFemale = ostim.isFemale(PlayerRef)
 	partnerIsFemale = ostim.isFemale(partner)
 
 	if secondPartner != none
 		secondPartnerIsFemale = ostim.isFemale(secondPartner)
 	endif
 
+	bool appliedSMPToPlayer = false
+
 	OUndressScript oundress = ostim.GetUndressScript()
 
 	OsexIntegrationMain.Console("OSmp: Starting...")
 
+	if (playerIsFemale && !isActorSMP(PlayerRef))
+		OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
+
+		; if we don't wait, SMP may fail to be applied
+		; no idea why...
+		Utility.wait(2)
+		MCM.PlayerSMP()
+
+		; we must toggle free cam off and on for player character SMP to properly apply
+		; only if user set the scene to start in free cam in OStim menu
+		; I have no idea why this is needed...
+		if ostim.UseFreeCam
+			ostim.ToggleFreeCam(false)
+			ostim.ToggleFreeCam(true)
+		endif
+
+		appliedSMPToPlayer = true
+	endif
+
 	if (partnerIsFemale && !isActorSMP(partner))
 		OsexIntegrationMain.Console("OSmp: Applying SMP to " + partner.GetActorBase().GetName() + "...")
 		OsexIntegrationMain.Console("OSmp: SMP Cup size in MCM is " + OsmpMCM.smpCupIndex)
-		Utility.wait(2)
+
+		if !appliedSMPToPlayer
+			Utility.wait(2)
+		endif
+
 		MCM.NPCSMP(partner, OsmpMCM.smpCupIndex)
 
 		if undressAtAnimStart
@@ -61,7 +100,19 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 endevent
 
 event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
-	secondPartner = ostim.GetThirdActor()
+	; if OSmp is disabled in MCM, don't run this event
+	if OsmpMCM.toggleDisableOSmp
+		return
+	endif
+
+	Actor[] actors = ostim.GetActors()
+
+	; if player is not in scene, skip, OSmp won't run on NPC scenes
+	if actors[0] != PlayerRef && actors[1] != PlayerRef
+		return
+	endif
+
+	secondPartner = actors[2]
 
 	secondPartnerIsFemale = ostim.isFemale(secondPartner)
 
@@ -90,7 +141,39 @@ event OstimThirdLeave(string eventname, string strarg, float numarg, form sender
 endevent
 
 event OstimEnd(string eventname, string strarg, float numarg, form sender)
+	; if numArg is not -1, it's a scene running on a subthread, and therefore an NPC scene
+	if (numarg != -1)
+		; a bug in OStim causes actors in main thread to redress if subthread scene ends
+		; so undress them again
+		OUndressScript oundress = ostim.GetUndressScript()
+		if partner != none
+			; wait for the redress to complete
+			Utility.wait(2)
+			; and then undress
+			partnerClothes = oundress.storeequipmentforms(partner, true)
+			oundress.UnequipForms(partner, partnerClothes)
+		endif
+		if secondPartner != none
+			secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
+			oundress.UnequipForms(secondPartner, secondPartnerClothes)
+		endif
+		return
+	endif
+
+	Actor[] actors = ostim.GetActors()
+
+	; however, there can be an NPC scene in main thread, so this check is also needed
+	; if player is not in scene, skip, OSmp won't run on NPC scenes
+	if actors[0] != PlayerRef && actors[1] != PlayerRef
+		return
+	endif
+
 	OsexIntegrationMain.Console("OSmp: Cleaning SMP...")
+
+	if (playerIsFemale && !OsmpMCM.toggleKeepPlayerSMP && isActorSMP(PlayerRef))
+		OsexIntegrationMain.Console("OSmp: Removing SMP from player character...")
+		MCM.PlayerSMP()
+	endif
 
 	if (partnerIsFemale && isActorSMP(partner))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
