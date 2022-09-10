@@ -1,8 +1,5 @@
 Scriptname OSmpBHUNPScript extends Quest
 
-form[] partnerClothes
-form[] secondPartnerClothes
-
 actor partner
 actor secondPartner
 
@@ -15,35 +12,59 @@ bool undressAtAnimStart = true
 bool partnerHadSMP = false
 bool secondPartnerHadSMP = false
 
+armor NPCMain48
+armor NPCMain50
+armor NPCMain51
+armor NPCMain60
+int bhunpMcmSmpIndex = 0
+
+
 event oninit()
 	ostim = OUtils.GetOStim()
 	registerformodevent("ostim_start", "OstimStart")
-	registerformodevent("ostim_end", "OstimEnd")
 	registerformodevent("ostim_thirdactor_join", "OstimThirdJoin")
 	registerformodevent("ostim_thirdactor_leave", "OstimThirdLeave")
+	registerformodevent("ostim_end", "OstimEnd")
 endevent
 
+
+function HandleModEvents()
+	unregisterForAllModEvents()
+
+	ostim = OUtils.GetOStim()
+
+	registerformodevent("ostim_start", "OstimStart")
+	registerformodevent("ostim_thirdactor_join", "OstimThirdJoin")
+	registerformodevent("ostim_thirdactor_leave", "OstimThirdLeave")
+	registerformodevent("ostim_end", "OstimEnd")
+
+	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
+endfunction
+
+
 event OstimStart(string eventname, string strarg, float numarg, form sender)
-	; if OSmp is disabled in MCM, don't run this event
-	if OsmpMCM.toggleDisableOSmp
+	; if OSmp is disabled in MCM or player is not in scene, don't run this event
+	; OSmp won't run on NPC scenes
+	if !ostim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
 		return
 	endif
 
-	Actor[] actors = ostim.GetActors()
+	OsexIntegrationMain.Console("OSmp: Starting...")
 
-	; if player is not in scene, skip, OSmp won't run on NPC scenes
-	if actors[0] != PlayerRef && actors[1] != PlayerRef
-		return
-	endif
-
-	undressAtAnimStart = ostim.AlwaysUndressAtAnimStart
-
-	partner = ostim.GetSexPartner(PlayerRef)
+	actor dom = ostim.GetDomActor()
+	actor sub = ostim.GetSubActor()
 	secondPartner = ostim.GetThirdActor()
 
-	playerIsFemale = ostim.isFemale(PlayerRef)
-	partnerIsFemale = ostim.isFemale(partner)
+	if dom == PlayerRef
+		partner = sub
+	else
+		partner = dom
+	endif
 
+	bool playerHadSMP = isActorSMP(PlayerRef)
+	playerIsFemale = ostim.isFemale(PlayerRef)
+
+	partnerIsFemale = ostim.isFemale(partner)
 	partnerHadSMP = isActorSMP(partner)
 
 	if secondPartner != none
@@ -51,93 +72,80 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 		secondPartnerHadSMP = isActorSMP(secondPartner)
 	endif
 
-	bool appliedSMPToPlayer = false
-
 	OUndressScript oundress = ostim.GetUndressScript()
+	undressAtAnimStart = ostim.AlwaysUndressAtAnimStart
 
-	OsexIntegrationMain.Console("OSmp: Starting...")
-
-	if (playerIsFemale && !isActorSMP(PlayerRef))
-		OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
-
-		; if we don't wait, SMP may fail to be applied
-		; no idea why...
-		Utility.wait(2)
-		MCM.PlayerSMP()
-
-		; we must toggle free cam off and on for player character SMP to properly apply
-		; only if user set the scene to start in free cam in OStim menu
-		; I have no idea why this is needed...
-		if ostim.UseFreeCam
-			ostim.ToggleFreeCam(false)
-			ostim.ToggleFreeCam(true)
-		endif
-
-		appliedSMPToPlayer = true
-	endif
+	; Due to OStim scene setup being a script heavy process
+	; SMP may fail to apply if we don't use this wait
+	; This doesn't happen in 3BA version because CBBE 3BA resets the bones nodes when SMP is toggled on
+	; BHUNP doesn't do the same process for some reason
+	; I tested this extensively and the only way to avoid SMP failure is by using this wait
+	Utility.Wait(1)
 
 	if (partnerIsFemale && !partnerHadSMP)
-		OsexIntegrationMain.Console("OSmp: Applying SMP to " + partner.GetActorBase().GetName() + "...")
-		OsexIntegrationMain.Console("OSmp: SMP Cup size in MCM is " + OsmpMCM.smpCupIndex)
-
-		if !appliedSMPToPlayer
-			Utility.wait(2)
-		endif
-
-		MCM.NPCSMP(partner, OsmpMCM.smpCupIndex)
+		EquipSmpForActor(partner)
 
 		if undressAtAnimStart
-			partnerClothes = oundress.storeequipmentforms(partner, true)
+			form[] partnerClothes = oundress.storeequipmentforms(partner, true)
 			oundress.UnequipForms(partner, partnerClothes)
 		endif
 	endif
 
 	if (secondPartner != none && secondPartnerIsFemale && !secondPartnerHadSMP)
-		OsexIntegrationMain.Console("OSmp: Applying SMP to " + secondPartner.GetActorBase().GetName() + "...")
-		MCM.NPCSMP(secondPartner, OsmpMCM.smpCupIndex)
+		EquipSmpForActor(secondPartner)
 
 		if undressAtAnimStart
-			secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
+			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
 			oundress.UnequipForms(secondPartner, secondPartnerClothes)
 		endif
+	endif
+
+	if (playerIsFemale && !playerHadSMP)
+		OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
+
+		MCM.PlayerSMP()
+
+		OsexIntegrationMain.Console("OSmp: SMP applied to player character")
+	endif
+
+	; we must toggle freecam off and on for SMP to properly apply to player character
+	; only if user set the scene to start in freecam in OStim MCM
+	; I have no idea why this is needed
+	; in my tests, this was also needed outside of OStim scenes, SMP won't apply properly if you're in freecam
+	; it is most likely a bug with 3BA/BHUNP SMP application, nothing I can do currently besides this freecam hack
+	if playerIsFemale && !playerHadSMP && ostim.UseFreeCam && OSANative.IsFreeCam()
+		ostim.ToggleFreeCam(false)
+		ostim.ToggleFreeCam(true)
 	endif
 
 	OsexIntegrationMain.Console("OSmp: Finished!")
 endevent
 
+
 event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
-	; if OSmp is disabled in MCM, don't run this event
-	if OsmpMCM.toggleDisableOSmp
+	; if OSmp is disabled in MCM or player is not in scene, don't run this event
+	; OSmp won't run on NPC scenes
+	if !ostim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
 		return
 	endif
 
-	Actor[] actors = ostim.GetActors()
-
-	; if player is not in scene, skip, OSmp won't run on NPC scenes
-	if actors[0] != PlayerRef && actors[1] != PlayerRef
-		return
-	endif
-
-	secondPartner = actors[2]
-
+	secondPartner = ostim.GetThirdActor()
 	secondPartnerIsFemale = ostim.isFemale(secondPartner)
 	secondPartnerHadSMP = isActorSMP(secondPartner)
 
 	OUndressScript oundress = ostim.GetUndressScript()
 
 	if (secondPartnerIsFemale && !secondPartnerHadSMP)
-		OsexIntegrationMain.Console("OSmp: Applying SMP to " + secondPartner.GetActorBase().GetName() + "...")
-		MCM.NPCSMP(secondPartner, OsmpMCM.smpCupIndex)
-		secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
+		EquipSmpForActor(secondPartner)
 
 		if undressAtAnimStart
+			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
 			oundress.UnequipForms(secondPartner, secondPartnerClothes)
 		endif
-
-		OsexIntegrationMain.Console("OSmp: SMP applied to " + secondPartner.GetActorBase().GetName())
 	endif
 
 endevent
+
 
 event OstimThirdLeave(string eventname, string strarg, float numarg, form sender)
 	if (secondPartnerIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
@@ -146,6 +154,7 @@ event OstimThirdLeave(string eventname, string strarg, float numarg, form sender
 		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
 	endif
 endevent
+
 
 event OstimEnd(string eventname, string strarg, float numarg, form sender)
 	; if numArg is not -1, it's a scene running on a subthread, and therefore an NPC scene
@@ -157,21 +166,19 @@ event OstimEnd(string eventname, string strarg, float numarg, form sender)
 			; wait for the redress to complete
 			Utility.wait(2)
 			; and then undress
-			partnerClothes = oundress.storeequipmentforms(partner, true)
+			form[] partnerClothes = oundress.storeequipmentforms(partner, true)
 			oundress.UnequipForms(partner, partnerClothes)
 		endif
 		if secondPartner != none
-			secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
+			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
 			oundress.UnequipForms(secondPartner, secondPartnerClothes)
 		endif
 		return
 	endif
 
-	Actor[] actors = ostim.GetActors()
-
 	; however, there can be an NPC scene in main thread, so this check is also needed
 	; if player is not in scene, skip, OSmp won't run on NPC scenes
-	if actors[0] != PlayerRef && actors[1] != PlayerRef
+	if !ostim.isPlayerInvolved()
 		return
 	endif
 
@@ -180,63 +187,120 @@ event OstimEnd(string eventname, string strarg, float numarg, form sender)
 	if (playerIsFemale && !OsmpMCM.toggleKeepPlayerSMP && isActorSMP(PlayerRef))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from player character...")
 		MCM.PlayerSMP()
+		OsexIntegrationMain.Console("OSmp: SMP cleaned from player character")
 	endif
 
 	if (partnerIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !partnerHadSMP) && isActorSMP(partner))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(partner, OsmpMCM.smpCupIndex)
+		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + partner.GetActorBase().GetName())
 	endif
 
 	if (secondPartner != none && secondPartnerIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
 		OsexIntegrationMain.Console("OSmp: Removing SMP from " + secondPartner.GetActorBase().GetName() + "...")
 		MCM.NPCSMP(secondPartner, OsmpMCM.smpCupIndex)
+		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
 	endif
 endevent
 
-bool function isActorSMP(actor partnerSMP)
-	armor NPCMain48
-	armor NPCMain50
-	armor NPCMain51
-	armor NPCMain60
 
-	bool isSMP = false
+bool function isActorSMP(actor partnerSMP)
+	bool isSMP = partnerSMP.isinfaction(MCM.BHUNPSMPFaction)
 
 	String partnerName = partnerSMP.GetActorBase().GetName()
 
-	if OsmpMCM.smpCupIndex == 0
-		NPCMain48 = MCM.SMP3BONObjectF148
-		NPCMain50 = MCM.SMP3BONObjectF150
-		NPCMain51 = MCM.SMP3BONObjectF151
-		NPCMain60 = MCM.SMP3BONObjectF160
-	elseIf OsmpMCM.smpCupIndex == 1
-		NPCMain48 = MCM.SMP3BONObjectF248
-		NPCMain50 = MCM.SMP3BONObjectF250
-		NPCMain51 = MCM.SMP3BONObjectF251
-		NPCMain60 = MCM.SMP3BONObjectF260
-	elseIf OsmpMCM.smpCupIndex == 2
-		NPCMain48 = MCM.SMP3BONObjectF348
-		NPCMain50 = MCM.SMP3BONObjectF350
-		NPCMain51 = MCM.SMP3BONObjectF351
-		NPCMain60 = MCM.SMP3BONObjectF360
-	elseIf OsmpMCM.smpCupIndex == 3
-		NPCMain48 = MCM.SMP3BONObjectF448
-		NPCMain50 = MCM.SMP3BONObjectF450
-		NPCMain51 = MCM.SMP3BONObjectF451
-		NPCMain60 = MCM.SMP3BONObjectF460
-	endIf
-
-	if (partnerSMP.GetItemCount(NPCMain48) > 0) || (partnerSMP.GetItemCount(NPCMain50) > 0) || (partnerSMP.GetItemCount(NPCMain51) > 0) || (partnerSMP.GetItemCount(NPCMain60) > 0) || (partnerSMP.isinfaction(MCM.BHUNPSMPFaction))
-		isSMP = true
-	endif
-
 	if isSMP
-		OsexIntegrationMain.Console("OSmp: " + partnerName + " is already in SMP mode")
+		OsexIntegrationMain.Console("OSmp: " + partnerName + " is in SMP mode")
 	else
 		OsexIntegrationMain.Console("OSmp: " + partnerName + " is in CBPC mode")
 	endif
 
 	return isSMP
 endfunction
+
+
+function StopCbpcForActor(Actor act)
+	MCM.CBPCBreasts(act, true)
+	MCM.CBPCButts(act, true)
+	MCM.CBPCBelly(act, true)
+	MCM.CBPCVagina(act, true)
+	MCM.CBPCThigh(act, true)
+endfunction
+
+
+function EquipSmpForActor(Actor act)
+	OsexIntegrationMain.Console("OSmp: Applying SMP to " + act.GetActorBase().GetName() + "...")
+
+	StopCbpcForActor(act)
+
+	int cupSizeToUse = OSmpMCM.smpCupIndex
+
+	if OsmpMCM.toggleAutomaticCup
+		float npcWeight = act.GetActorBase().GetWeight()
+
+		cupSizeToUse = 0
+
+		if npcWeight < OsmpMCM.aCupMaximumWeight
+			cupSizeToUse = 0
+		elseif npcWeight < OsmpMCM.bCupMaximumWeight
+			cupSizeToUse = 1
+		elseif npcWeight < OsmpMCM.cCupMaximumWeight
+			cupSizeToUse = 2
+		else
+			cupSizeToUse = 3
+		endif
+	endif
+
+	UpdateNPCSmpArmorForms(cupSizeToUse)
+
+	if MCM.SlotList[bhunpMcmSmpIndex] == MCM.S48
+		act.AddItem(NPCMain48 as form, 1, true)
+		act.EquipItem(NPCMain48 as form, true, true)
+	elseIf MCM.SlotList[bhunpMcmSmpIndex] == MCM.S50
+		act.AddItem(NPCMain50 as form, 1, true)
+		act.EquipItem(NPCMain50 as form, true, true)
+	elseIf MCM.SlotList[bhunpMcmSmpIndex] == MCM.S51
+		act.AddItem(NPCMain51 as form, 1, true)
+		act.EquipItem(NPCMain51 as form, true, true)
+	elseIf MCM.SlotList[bhunpMcmSmpIndex] == MCM.S60
+		act.AddItem(NPCMain60 as form, 1, true)
+		act.EquipItem(NPCMain60 as form, true, true)
+	endIf
+
+	act.addtofaction(MCM.BHUNPSMPFaction)
+
+	OsexIntegrationMain.Console("OSmp: SMP applied to " + act.GetActorBase().GetName() + " with cup size " + cupSizeToUse)
+endfunction
+
+
+function UpdateNPCSmpArmorForms(int cupSize)
+	if cupSize == 0
+		NPCMain48 = MCM.SMP3BONObjectF148
+		NPCMain50 = MCM.SMP3BONObjectF150
+		NPCMain51 = MCM.SMP3BONObjectF151
+		NPCMain60 = MCM.SMP3BONObjectF160
+		bhunpMcmSmpIndex = MCM.FAsTIndex
+	elseIf cupSize == 1
+		NPCMain48 = MCM.SMP3BONObjectF248
+		NPCMain50 = MCM.SMP3BONObjectF250
+		NPCMain51 = MCM.SMP3BONObjectF251
+		NPCMain60 = MCM.SMP3BONObjectF260
+		bhunpMcmSmpIndex = MCM.FBsTIndex
+	elseIf cupSize == 2
+		NPCMain48 = MCM.SMP3BONObjectF348
+		NPCMain50 = MCM.SMP3BONObjectF350
+		NPCMain51 = MCM.SMP3BONObjectF351
+		NPCMain60 = MCM.SMP3BONObjectF360
+		bhunpMcmSmpIndex = MCM.FCsTIndex
+	elseIf cupSize == 3
+		NPCMain48 = MCM.SMP3BONObjectF448
+		NPCMain50 = MCM.SMP3BONObjectF450
+		NPCMain51 = MCM.SMP3BONObjectF451
+		NPCMain60 = MCM.SMP3BONObjectF460
+		bhunpMcmSmpIndex = MCM.FDsTIndex
+	endIf
+endfunction
+
 
 OsexIntegrationMain property ostim auto
 actor property playerref auto
