@@ -1,7 +1,5 @@
 Scriptname BHUNPAddonMCM extends SKI_ConfigBase
 
-
-
 armor property SMP3BONObjectF148 auto
 armor property SMP3BONObjectF151 auto
 armor property SMP3BONObjectF150 auto
@@ -41,38 +39,35 @@ Int property FnumIndex = 0 auto hidden
 Int property FDsTIndex = 1 auto hidden
 
 String property S48 = "$SLOT48" auto hidden
-String property Dslot = "$Fslot_D" auto hidden
 String[] property SlotList auto hidden
+String[] property PSlotList auto hidden
 String property HotkeyInfoFB = "$HOTKEYINFOFB" auto hidden
 String property S60 = "$SLOT60" auto hidden
+String property S69 = "$SLOTPARTS" auto hidden
 String property S51 = "$SLOT51" auto hidden
 String property HotkeyInfoFC = "$HOTKEYINFOFC" auto hidden
 String property HotkeyInfoFA = "$HOTKEYINFOFA" auto hidden
 String property HotkeyInfoP = "$HOTKEYINFOP" auto hidden
 String property HotkeyInfoFD = "$HOTKEYINFOFD" auto hidden
-String property Bslot = "$Fslot_B" auto hidden
+
 
 Bool property PlayerSpellToggle = false auto hidden
-
-Bool property SMPBreastsApply Auto
-Bool property SMPButtsApply Auto
-Bool property SMPLegsApply Auto
-Bool property SMPVaginaApply Auto
-Bool property SMPBellyApply Auto
-
 
 spell property FAspell auto
 
 Bool property NPCSpellToggle = false auto hidden
+Bool property ClearNPCSMPToggle = false auto hidden
 
-
+String property Aslot = "$Fslot_A" auto hidden
+String property Bslot = "$Fslot_B" auto hidden
 String property Cslot = "$Fslot_C" auto hidden
+String property Dslot = "$Fslot_D" auto hidden
 
 Int property PsTIndex = 1 auto hidden
 spell property FBspell auto
 String[] property FnumString auto hidden
 
-String property Aslot = "$Fslot_A" auto hidden
+
 String property PSpellToggleInfo = "$PSPELLTOGGLEINFO" auto hidden
 spell property FDspell auto
 String property S50 = "$SLOT50" auto hidden
@@ -85,20 +80,67 @@ spell property FCspell auto
 Actor Property PlayerRef Auto
 Faction Property BHUNPSMPFaction Auto
 
+Bool property SMPBreastsApply Auto
+Bool property SMPButtsApply Auto
+Bool property SMPLegsApply Auto
+Bool property SMPBellyApply Auto
+Bool property SMPVaginaApply Auto
+Bool property SMPVaginaCollisionApply Auto
+Quest Property BHUNP3BController Auto
+
+Bool property SMPBreastsPlayer Auto
+Bool property SMPButtsPlayer Auto
+Bool property SMPLegsPlayer = true Auto
+Bool property SMPBellyPlayer Auto
+Bool property SMPVaginaPlayer Auto
+
+Bool property CBPCBreastsPlayer Auto
+Bool property CBPCButtsPlayer Auto
+Bool property CBPCLegsPlayer Auto
+Bool property CBPCBellyPlayer Auto
+Bool property CBPCVaginaPlayer Auto
+Bool property CBPCVaginaCollisionPlayer Auto
+
+Bool property PSMPRESET auto
+Bool property PlayerGenderToggle = true auto
+Bool property DebugLogging = false auto
+
+function PlayerSMPReset()
+	PlayerRef.UnequipItem(SMP3BONObjectP48 as form, false, true)
+	PlayerRef.UnequipItem(SMP3BONObjectP50 as form, false, true)
+	PlayerRef.UnequipItem(SMP3BONObjectP51 as form, false, true)
+	PlayerRef.UnequipItem(SMP3BONObjectP60 as form, false, true)
+	
+	PlayerRef.RemoveItem(SMP3BONObjectP48 as form, 99, true, none)
+	PlayerRef.RemoveItem(SMP3BONObjectP50 as form, 99, true, none)
+	PlayerRef.RemoveItem(SMP3BONObjectP51 as form, 99, true, none)
+	PlayerRef.RemoveItem(SMP3BONObjectP60 as form, 99, true, none)
+	(BHUNP3BController as BHUNP3BControllerscript).EquipSMPArmor(PlayerRef, false)
+	PlayerRef.removefromfaction(BHUNPSMPFaction)
+endfunction
+
 function PlayerSMP()
+
 if PlayerRef.isinfaction(BHUNPSMPFaction)
-	if PlayerRef.GetItemCount(SMP3BONObjectP48 as form) != 0 && SlotList[PsTIndex] == S48
+	if PlayerRef.getfactionrank(BHUNPSMPFaction) == 1 && PSlotList[PsTIndex] == S48
 		PlayerRef.UnequipItem(SMP3BONObjectP48 as form, false, true)
 		PlayerRef.RemoveItem(SMP3BONObjectP48 as form, 99, true, none)
-	elseIf PlayerRef.GetItemCount(SMP3BONObjectP50 as form) != 0 && SlotList[PsTIndex] == S50
+	elseIf PlayerRef.getfactionrank(BHUNPSMPFaction) == 2 && PSlotList[PsTIndex] == S50
 		PlayerRef.UnequipItem(SMP3BONObjectP50 as form, false, true)
 		PlayerRef.RemoveItem(SMP3BONObjectP50 as form, 99, true, none)
-	elseIf PlayerRef.GetItemCount(SMP3BONObjectP51 as form) != 0 && SlotList[PsTIndex] == S51
+	elseIf PlayerRef.getfactionrank(BHUNPSMPFaction) == 3 && PSlotList[PsTIndex] == S51
 		PlayerRef.UnequipItem(SMP3BONObjectP51 as form, false, true)
 		PlayerRef.RemoveItem(SMP3BONObjectP51 as form, 99, true, none)
-	elseIf PlayerRef.GetItemCount(SMP3BONObjectP60 as form) != 0 && SlotList[PsTIndex] == S60
+	elseIf PlayerRef.getfactionrank(BHUNPSMPFaction) == 4 && PSlotList[PsTIndex] == S60
 		PlayerRef.UnequipItem(SMP3BONObjectP60 as form, false, true)
 		PlayerRef.RemoveItem(SMP3BONObjectP60 as form, 99, true, none)
+	elseIf PlayerRef.getfactionrank(BHUNPSMPFaction) == 5 && PSlotList[PsTIndex] == S69
+		(BHUNP3BController as BHUNP3BControllerscript).SMPPartsApply(PlayerRef, false)
+		PlayerRef.removefromfaction(BHUNPSMPFaction)
+		if DebugLogging
+			debug.Notification("$CBPCMODE")
+		endif
+		return
 	else
 		PlayerRef.UnequipItem(SMP3BONObjectP48 as form, false, true)
 		PlayerRef.RemoveItem(SMP3BONObjectP48 as form, 99, true, none)
@@ -110,42 +152,67 @@ if PlayerRef.isinfaction(BHUNPSMPFaction)
 		PlayerRef.RemoveItem(SMP3BONObjectP60 as form, 99, true, none)
 	endIf
 	PlayerRef.removefromfaction(BHUNPSMPFaction)
-	CBPCBreasts(PlayerRef, false)
-	CBPCButts(PlayerRef, false)
-	CBPCBelly(PlayerRef, false)
-	CBPCVagina(PlayerRef, false)
-	CBPCThigh(PlayerRef, false)
-	debug.Notification("Player 3BBB CBPC Mode")
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCBreasts(PlayerRef, false)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCButts(PlayerRef, false)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCBelly(PlayerRef, false)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCVagina(PlayerRef, false)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCVaginaCollision(PlayerRef, false)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCThigh(PlayerRef, false)
+	if DebugLogging
+		debug.Notification("$CBPCMODE")
+	endif
 else
+	if PlayerGenderToggle == true
+		if PlayerRef.GetActorBase().GetSex() != 1
+			if DebugLogging
+				debug.Notification("$PLAYERGENDERCHECK")
+			endif
+			return
+		endif
+	endif	
+
 	PlayerRef.AddtoFaction(BHUNPSMPFaction)
-	CBPCBreasts(PlayerRef, true)
-	CBPCButts(PlayerRef, true)
-	CBPCBelly(PlayerRef, true)
-	CBPCVagina(PlayerRef, true)
-	CBPCThigh(PlayerRef, true)
-	if SlotList[PsTIndex] == S48
+	
+	if PSlotList[PsTIndex] == S69
+		(BHUNP3BController as BHUNP3BControllerscript).SMPPartsApply(PlayerRef, true)
+		PlayerRef.setfactionrank(BHUNPSMPFaction, 5)
+		if DebugLogging
+			debug.Notification("$SMPMODE")
+		endif
+		return
+	endif
+	
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCBreasts(PlayerRef, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCButts(PlayerRef, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCBelly(PlayerRef, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCVagina(PlayerRef, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCVaginaCollision(PlayerRef, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCThigh(PlayerRef, true)
+	if PSlotList[PsTIndex] == S48
 		PlayerRef.AddItem(SMP3BONObjectP48 as form, 1, true)
 		PlayerRef.EquipItem(SMP3BONObjectP48 as form, true, true)
-		debug.Notification("Player 3BBB SMP Mode")
-	elseIf SlotList[PsTIndex] == S50
+		PlayerRef.setfactionrank(BHUNPSMPFaction, 1)
+	elseIf PSlotList[PsTIndex] == S50
 		PlayerRef.AddItem(SMP3BONObjectP50 as form, 1, true)
 		PlayerRef.EquipItem(SMP3BONObjectP50 as form, true, true)
-		debug.Notification("Player 3BBB SMP Mode")
-	elseIf SlotList[PsTIndex] == S51
+		PlayerRef.setfactionrank(BHUNPSMPFaction, 2)
+	elseIf PSlotList[PsTIndex] == S51
 		PlayerRef.AddItem(SMP3BONObjectP51 as form, 1, true)
 		PlayerRef.EquipItem(SMP3BONObjectP51 as form, true, true)
-		debug.Notification("Player 3BBB SMP Mode")
-	elseIf SlotList[PsTIndex] == S60
+		PlayerRef.setfactionrank(BHUNPSMPFaction, 3)
+	elseIf PSlotList[PsTIndex] == S60
 		PlayerRef.AddItem(SMP3BONObjectP60 as form, 1, true)
 		PlayerRef.EquipItem(SMP3BONObjectP60 as form, true, true)
-		debug.Notification("Player 3BBB SMP Mode")
+		PlayerRef.setfactionrank(BHUNPSMPFaction, 4)
 	endIf
+	if DebugLogging
+		debug.Notification("$SMPMODE")
+	endif
 endif
 
 endFunction
 
 function OnVersionUpdate(Int newVersion)
-
 	debug.Trace(self as String + ": Updating Version [" + CurrentVersion as String + "] -> [" + newVersion as String + "]", 0)
 	self.OnConfigInit()
 	if CurrentVersion == 2
@@ -155,23 +222,21 @@ function OnVersionUpdate(Int newVersion)
 endFunction
 
 function VersionCheck()
-
 	debug.Trace(self as String + " : VersionCheck()", 0)
 	parent.CheckVersion()
 endFunction
 
 function OnPageReset(String pagename)
-SetCursorFillMode(TOP_TO_BOTTOM)
-	if pagename == "" || pagename == "$PageName_General"
+Int iDisabledFlag = 0
+
+    ;if (page == "")
+        ;LoadCustomContent("BHUNP3BBB/Logo.dds", 180, 30)
+	if (pagename == "") || pagename == "$PageName_General"
+		UnloadCustomContent()
+		SetCursorFillMode(TOP_TO_BOTTOM)
 		AddHeaderOption("$SMPCONFIGS")
-		Int iDisabledFlag = 0
 		SetCursorPosition(0)
 		self.AddTextOption("BHUNP 3BBB MCM Version", CurrentVersion as String, self.OPTION_FLAG_DISABLED)
-		self.AddHeaderOption("$PUSS", 0)
-		self.AddToggleOptionST("OPTION_P_Spell_Toggle", "$PSPELLTOGGLE", PlayerSpellToggle, iDisabledFlag)
-		self.AddMenuOptionST("OPTION_PlayerSlot", "$PUSLOT", SlotList[PsTIndex], iDisabledFlag)
-		self.AddKeyMapOptionST("OPTION_Keymap_P", "$PKEYMAP", PKEY, iDisabledFlag)
-		self.AddEmptyOption()
 		self.AddHeaderOption("$FUSS", 0)
 		self.AddToggleOptionST("OPTION_NPC_Spell_Toggle", "$NPCSPELLTOGGLE", NPCSpellToggle, iDisabledFlag)
 		self.AddMenuOptionST("OPTION_Follower_A", "$FTSUAS", SlotList[FAsTIndex], iDisabledFlag)
@@ -182,16 +247,98 @@ SetCursorFillMode(TOP_TO_BOTTOM)
 		self.AddKeyMapOptionST("OPTION_Keymap_C", "$NPCCKEYMAP", NPCCKEY, iDisabledFlag)
 		self.AddMenuOptionST("OPTION_Follower_D", "$FTSUDS", SlotList[FDsTIndex], iDisabledFlag)
 		self.AddKeyMapOptionST("OPTION_Keymap_D", "$NPCDKEYMAP", NPCDKEY, iDisabledFlag)
+		self.AddHeaderOption("$FUSSMANAGE", 0)
+		self.AddToggleOptionST("OPTION_NPC_ClearSMP_Toggle", "$FUSSCLEAR", ClearNPCSMPToggle, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_DEBUGLOGGING_Toggle", "$DEBUGLOGGING", DebugLogging, iDisabledFlag)
+		SetCursorPosition(1)
+		self.AddToggleOptionST("OPTION_P_Gender_Toggle", "$PGENDERTOGGLE", PlayerGenderToggle, iDisabledFlag)
+		AddHeaderOption("$CBPCRESET")
+		self.AddToggleOptionST("OPTION_CBPCReset_Toggle", "$CBPCRESETTOGGLE", (BHUNP3BController as BHUNP3BControllerscript).CBPCResetToggle)
+		AddHeaderOption("$CBPCBODYPARTS")
+		self.AddToggleOptionST("OPTION_CBPC_Breasts_Toggle", "$CBPCBREASTSTOGGLE", SMPBreastsApply, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_CBPC_Butts_Toggle", "$CBPCBUTTSTOGGLE", SMPButtsApply, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_CBPC_Legs_Toggle", "$CBPCLEGSTOGGLE", SMPLegsApply, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_CBPC_Belly_Toggle", "$CBPCBELLYTOGGLE", SMPBellyApply, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_CBPC_Vagina_Toggle", "$CBPCVAGINATOGGLE", SMPVaginaApply, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_CBPC_VaginaCollision_Toggle", "$CBPCVAGINACOLLISIONTOGGLE", SMPVaginaCollisionApply, iDisabledFlag)
+	elseif pagename == "$PageName_Player"
+		UnloadCustomContent()
+		SetCursorFillMode(TOP_TO_BOTTOM)
+		SetCursorPosition(0)
+		self.AddHeaderOption("$PUSS", 0)
+		self.AddToggleOptionST("OPTION_P_Spell_Toggle", "$PSPELLTOGGLE", PlayerSpellToggle, iDisabledFlag)
+		self.AddMenuOptionST("OPTION_PlayerSlot", "$PUSLOT", PSlotList[PsTIndex], iDisabledFlag)
+		self.AddKeyMapOptionST("OPTION_Keymap_P", "$PKEYMAP", PKEY, iDisabledFlag)
+		self.AddToggleOptionST("OPTION_P_RESET_Toggle", "$PSMPRESET", PSMPRESET, iDisabledFlag)
 		SetCursorPosition(1)
 		AddHeaderOption("$SMPBODYPARTS")
-		self.AddToggleOptionST("OPTION_SMP_Breasts_Toggle", "$SMPBREASTSTOGGLE", SMPBreastsApply, iDisabledFlag)
-		self.AddToggleOptionST("OPTION_SMP_Butts_Toggle", "$SMPBUTTSTOGGLE", SMPButtsApply, iDisabledFlag)
-		self.AddToggleOptionST("OPTION_SMP_Legs_Toggle", "$SMPLEGSTOGGLE", SMPLegsApply, iDisabledFlag)
-		self.AddToggleOptionST("OPTION_SMP_Belly_Toggle", "$SMPBELLYTOGGLE", SMPBellyApply, iDisabledFlag)
-		self.AddToggleOptionST("OPTION_SMP_Vagina_Toggle", "$SMPVAGINATOGGLE", SMPVaginaApply, iDisabledFlag)
+		if PSlotList[PsTIndex] == S69
+			self.AddMenuOptionST("OPTION_SMPCup", "$PCUPSLOT", FnumString[FnumIndex], iDisabledFlag)
+			AddEmptyOption()
+			self.AddToggleOptionST("OPTION_SMP_Breasts_Toggle", "$SMPBREASTSTOGGLE", SMPBreastsPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_SMP_Butts_Toggle", "$SMPBUTTSTOGGLE", SMPButtsPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_SMP_Belly_Toggle", "$SMPBELLYTOGGLE", SMPBellyPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_SMP_Vagina_Toggle", "$SMPVAGINATOGGLE", SMPVaginaPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_SMP_Legs_Toggle", "$SMPLEGSTOGGLE", SMPLegsPlayer, iDisabledFlag)
+			AddEmptyOption()
+			self.AddToggleOptionST("OPTION_PLAYERCBPC_Breasts_Toggle", "$CBPCBREASTSTOGGLE", CBPCBreastsPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_PLAYERCBPC_Butts_Toggle", "$CBPCBUTTSTOGGLE", CBPCButtsPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_PLAYERCBPC_Legs_Toggle", "$CBPCLEGSTOGGLE", CBPCLegsPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_PLAYERCBPC_Belly_Toggle", "$CBPCBELLYTOGGLE", CBPCBellyPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_PLAYERCBPC_Vagina_Toggle", "$CBPCVAGINATOGGLE", CBPCVaginaPlayer, iDisabledFlag)
+			self.AddToggleOptionST("OPTION_PLAYERCBPC_VaginaCollision_Toggle", "$CBPCVAGINACOLLISIONTOGGLE", CBPCVaginaCollisionPlayer, iDisabledFlag)
+		else
+			self.AddTextOption("PlayerSMPDisabled", "Player SMP Selection Disabled", self.OPTION_FLAG_DISABLED)
+		endif
+	elseif pagename == "$PageName_NPCTracking"
+		UnloadCustomContent()
+		int nActors = 0
+		int i = (BHUNP3BController as BHUNP3BControllerscript).TrackedActors.Length
+		while (i)
+			i -= 1
+			
+			if ((BHUNP3BController as BHUNP3BControllerscript).TrackedActors[i])
+				nActors += 1
+			endIf
+		endWhile
 		
-	endIf
+		
+		SetCursorFillMode(LEFT_TO_RIGHT)
+    	SetCursorPosition(0)
+		
+		if (_trackingFilterPage > 0)
+			AddTextOptionST("$TRACKING_PREV_PAGE", "Previous Page [" + (_trackingFilterPage - 1) + "]", "")
+		else
+			AddEmptyOption()
+		endIf
+		
+		if (_trackingFilterPage < ((BHUNP3BController as BHUNP3BControllerscript).TrackedActors.Length / _actorsPerPage))
+			AddTextOptionST("$TRACKING_NEXT_PAGE", "Next Page [" + (_trackingFilterPage + 1) + "]", "")
+		else
+			AddEmptyOption()
+		endIf
+		
+		AddHeaderOption("$SMPTRACKINGNPC")
+		
+		int actorIndex = _actorsPerPage * _trackingFilterPage
+		int nListed = 0
+		
+		while (actorIndex < (BHUNP3BController as BHUNP3BControllerscript).TrackedActors.Length && nListed < _actorsPerPage)
+        Actor trackedActor = (BHUNP3BController as BHUNP3BControllerscript).TrackedActorGet(actorIndex)
+        	if trackedActor
+				AddTextOption(trackedActor.GetDisplayName(), "", self.OPTION_FLAG_DISABLED)
+			endIf
+        actorIndex += 1
+        nListed += 1
+		endWhile
+	endif
 endFunction
+
+
+
+int _trackingFilterPage = 0
+int _actorsPerPage = 10
+
 
 function NPC_Toggle_Disable()
 
@@ -202,10 +349,11 @@ function NPC_Toggle_Disable()
 endFunction
 
 function OnConfigInit()
-
 	ModName = "BHUNP 3BBB Addon"
-	Pages = new String[1]
+	Pages = new String[3]
 	Pages[0] = "$PageName_General"
+	Pages[1] = "$PageName_Player"
+	Pages[2] = "$PageName_NPCTracking"
 endFunction
 
 function OnInit()
@@ -216,6 +364,12 @@ function OnInit()
 	SlotList[1] = S50
 	SlotList[2] = S51
 	SlotList[3] = S60
+	PSlotList = new String[5]
+	PSlotList[0] = S48
+	PSlotList[1] = S50
+	PSlotList[2] = S51
+	PSlotList[3] = S60
+	PSlotList[4] = S69
 	FnumString = new String[4]
 	FnumString[0] = Aslot
 	FnumString[1] = Bslot
@@ -224,7 +378,6 @@ function OnInit()
 endFunction
 
 function NPC_Toggle_Enable()
-
 	PlayerRef.AddSpell(FAspell, true)
 	PlayerRef.AddSpell(FBspell, true)
 	PlayerRef.AddSpell(FCspell, true)
@@ -232,16 +385,41 @@ function NPC_Toggle_Enable()
 endFunction
 
 function OnGameReload()
-
 	parent.OnGameReload()
 	debug.Trace(self as String + " OnGameReload() : Check Version [" + CurrentVersion as String + "] / [" + self.GetVersion() as String + "]", 0)
 	self.VersionCheck()
 	self.UpdateKeyRegistration()
 endFunction
 
-
-
 function NPCSMP(actor akTarget, Int cup)
+
+	if PlayerGenderToggle == true
+		if PlayerRef.GetActorBase().GetSex() != 1
+			if DebugLogging
+				debug.Notification("$NPCGENDERCHECK")
+			endif
+			return
+		endif
+	endif	
+
+	if akTarget.isinfaction(BHUNPSMPFaction)
+		akTarget.removefromfaction(BHUNPSMPFaction)
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCBreasts(akTarget, false)
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCButts(akTarget, false)
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCBelly(akTarget, false)
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCVagina(akTarget, false)
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCVaginaCollision(akTarget, false)
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCThigh(akTarget, false)
+		unequipSMPAll(akTarget)
+		if DebugLogging
+			debug.Notification(akTarget.GetActorBase().GetName() + "$NPCCBPCMODE")
+		endif
+		int actori = (BHUNP3BController as BHUNP3BControllerscript).TrackedActorGetInt(akTarget)
+		if actori != -1
+			(BHUNP3BController as BHUNP3BControllerscript).TrackedActorRemove(actori)
+		endif
+		Return
+	endif
 
 	armor NPCMain60
 	armor NPCMain51
@@ -268,99 +446,112 @@ function NPCSMP(actor akTarget, Int cup)
 		NPCMain51 = SMP3BONObjectF451
 		NPCMain60 = SMP3BONObjectF460
 	endIf
-	
-	if (akTarget.GetItemCount(NPCMain48) > 0) || (akTarget.GetItemCount(NPCMain50) > 0) || (akTarget.GetItemCount(NPCMain51) > 0) || (akTarget.GetItemCount(NPCMain60) > 0) || (akTarget.isinfaction(BHUNPSMPFaction))
-		akTarget.removefromfaction(BHUNPSMPFaction)
-		CBPCBreasts(akTarget, false)
-		CBPCButts(akTarget, false)
-		CBPCBelly(akTarget, false)
-		CBPCVagina(akTarget, false)
-		CBPCThigh(akTarget, false)
-		unequipSMPAll(akTarget)
-		debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB CBPC Mode")
-		Return
-	endif
+
+	akTarget.addtofaction(BHUNPSMPFaction)
 	
 		if cup == 0
 			if SlotList[FAsTIndex] == S48
 				akTarget.AddItem(NPCMain48 as form, 1, true)
 				akTarget.EquipItem(NPCMain48 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
+				akTarget.setfactionrank(BHUNPSMPFaction, 1)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
 			elseIf SlotList[FAsTIndex] == S50
 				akTarget.AddItem(NPCMain50 as form, 1, true)
 				akTarget.EquipItem(NPCMain50 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
+				akTarget.setfactionrank(BHUNPSMPFaction, 2)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
 			elseIf SlotList[FAsTIndex] == S51
 				akTarget.AddItem(NPCMain51 as form, 1, true)
 				akTarget.EquipItem(NPCMain51 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
+				akTarget.setfactionrank(BHUNPSMPFaction, 3)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
 			elseIf SlotList[FAsTIndex] == S60
 				akTarget.AddItem(NPCMain60 as form, 1, true)
 				akTarget.EquipItem(NPCMain60 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
+				akTarget.setfactionrank(BHUNPSMPFaction, 4)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
 			endIf
+			
 		elseIf cup == 1
 			if SlotList[FBsTIndex] == S48
 				akTarget.AddItem(NPCMain48 as form, 1, true)
 				akTarget.EquipItem(NPCMain48 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
+				akTarget.setfactionrank(BHUNPSMPFaction, 1)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
 			elseIf SlotList[FBsTIndex] == S50
 				akTarget.AddItem(NPCMain50 as form, 1, true)
 				akTarget.EquipItem(NPCMain50 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
+				akTarget.setfactionrank(BHUNPSMPFaction, 2)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
 			elseIf SlotList[FBsTIndex] == S51
 				akTarget.AddItem(NPCMain51 as form, 1, true)
 				akTarget.EquipItem(NPCMain51 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
+				akTarget.setfactionrank(BHUNPSMPFaction, 3)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
 			elseIf SlotList[FBsTIndex] == S60
 				akTarget.AddItem(NPCMain60 as form, 1, true)
 				akTarget.EquipItem(NPCMain60 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
+				akTarget.setfactionrank(BHUNPSMPFaction, 4)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
 			endIf
 		elseIf cup == 2
 			if SlotList[FCsTIndex] == S48
 				akTarget.AddItem(NPCMain48 as form, 1, true)
 				akTarget.EquipItem(NPCMain48 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
+				akTarget.setfactionrank(BHUNPSMPFaction, 1)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
 			elseIf SlotList[FCsTIndex] == S50
 				akTarget.AddItem(NPCMain50 as form, 1, true)
 				akTarget.EquipItem(NPCMain50 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
+				akTarget.setfactionrank(BHUNPSMPFaction, 2)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
 			elseIf SlotList[FCsTIndex] == S51
 				akTarget.AddItem(NPCMain51 as form, 1, true)
 				akTarget.EquipItem(NPCMain51 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
+				akTarget.setfactionrank(BHUNPSMPFaction, 3)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
 			elseIf SlotList[FCsTIndex] == S60
 				akTarget.AddItem(NPCMain60 as form, 1, true)
 				akTarget.EquipItem(NPCMain60 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
+				akTarget.setfactionrank(BHUNPSMPFaction, 4)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
 			endIf
 		elseIf cup == 3
 			if SlotList[FDsTIndex] == S48
 				akTarget.AddItem(NPCMain48 as form, 1, true)
 				akTarget.EquipItem(NPCMain48 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
+				akTarget.setfactionrank(BHUNPSMPFaction, 1)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 48")
 			elseIf SlotList[FDsTIndex] == S50
 				akTarget.AddItem(NPCMain50 as form, 1, true)
 				akTarget.EquipItem(NPCMain50 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
+				akTarget.setfactionrank(BHUNPSMPFaction, 2)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 50")
 			elseIf SlotList[FDsTIndex] == S51
 				akTarget.AddItem(NPCMain51 as form, 1, true)
 				akTarget.EquipItem(NPCMain51 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
+				akTarget.setfactionrank(BHUNPSMPFaction, 3)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 51")
 			elseIf SlotList[FDsTIndex] == S60
 				akTarget.AddItem(NPCMain60 as form, 1, true)
 				akTarget.EquipItem(NPCMain60 as form, true, true)
-				debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
+				akTarget.setfactionrank(BHUNPSMPFaction, 4)
+				;debug.Notification(akTarget.GetActorBase().GetName() + " 3BBB SMP Mode Slot 60")
 			endIf
 		endif
-
-	akTarget.addtofaction(BHUNPSMPFaction)
-	CBPCBreasts(akTarget, true)
-	CBPCButts(akTarget, true)
-	CBPCBelly(akTarget, true)
-	CBPCVagina(akTarget, true)
-	CBPCThigh(akTarget, true)
+		
+		if DebugLogging
+			debug.Notification(akTarget.GetActorBase().GetName() + "$NPCSMPMODE")
+		endif
+	
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCBreasts(akTarget, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCButts(akTarget, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCBelly(akTarget, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCVagina(akTarget, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCVaginaCollision(akTarget, true)
+	(BHUNP3BController as BHUNP3BControllerscript).CBPCThigh(akTarget, true)
+	
+	(BHUNP3BController as BHUNP3BControllerscript).TrackedActorAdd(akTarget)
 	Return
 endFunction
 
@@ -400,7 +591,7 @@ function unequipSMPAll(actor akTarget)
 EndFunction
 
 Int function GetVersion()
-	return 7
+	return 8
 endFunction
 
 ; Skipped compiler generated GotoState
@@ -409,7 +600,7 @@ function OnKeyDown(Int INkeyCode)
 
 	objectreference Target = game.GetCurrentCrosshairRef()
 	if INkeyCode == PKEY
-		self.PlayerSMP()
+		Self.PlayerSMP()
 	elseIf Target as actor
 		actor akTarget = Target as actor
 		if INkeyCode == NPCAKEY
@@ -425,7 +616,6 @@ function OnKeyDown(Int INkeyCode)
 endFunction
 
 function UpdateKeyRegistration()
-
 	self.UnregisterForAllKeys()
 	self.RegisterForKey(PKEY)
 	self.RegisterForKey(NPCAKEY)
@@ -435,97 +625,12 @@ function UpdateKeyRegistration()
 endFunction
 
 function P_Toggle_Disable()
-
 	PlayerRef.RemoveSpell(Pspell)
 endFunction
 
 function P_Toggle_Enable()
-
 	PlayerRef.AddSpell(Pspell, true)
 endFunction
-
-
-function CBPCBreasts(actor target, bool Pstop = false)
-if SMPBreastsApply
-	if !Pstop
-		CBPCPluginScript.StartPhysics(target, "L Breast01")
-		CBPCPluginScript.StartPhysics(target, "L Breast02")
-		CBPCPluginScript.StartPhysics(target, "L Breast03")
-		CBPCPluginScript.StartPhysics(target, "R Breast01")
-		CBPCPluginScript.StartPhysics(target, "R Breast02")
-		CBPCPluginScript.StartPhysics(target, "R Breast03")
-	else
-		CBPCPluginScript.StopPhysics(target, "L Breast01")
-		CBPCPluginScript.StopPhysics(target, "L Breast02")
-		CBPCPluginScript.StopPhysics(target, "L Breast03")
-		CBPCPluginScript.StopPhysics(target, "R Breast01")
-		CBPCPluginScript.StopPhysics(target, "R Breast02")
-		CBPCPluginScript.StopPhysics(target, "R Breast03")
-	endif
-endif
-endFunction
-
-function CBPCButts(actor target, bool Pstop = false)
-if SMPButtsApply
-	if !Pstop
-		CBPCPluginScript.StartPhysics(target, "NPC L Butt")
-		CBPCPluginScript.StartPhysics(target, "NPC R Butt")
-	else
-		CBPCPluginScript.StopPhysics(target, "NPC L Butt")
-		CBPCPluginScript.StopPhysics(target, "NPC R Butt")
-	endif
-endif
-endFunction
-
-function CBPCThigh(actor target, bool Pstop = false)
-if SMPLegsApply
-	if !Pstop
-		CBPCPluginScript.StartPhysics(target, "NPC L FrontThigh")
-		CBPCPluginScript.StartPhysics(target, "NPC R FrontThigh")
-		CBPCPluginScript.StartPhysics(target, "NPC L RearThigh")
-		CBPCPluginScript.StartPhysics(target, "NPC R RearThigh")
-		CBPCPluginScript.StartPhysics(target, "NPC L RearCalf [LrClf]")
-		CBPCPluginScript.StartPhysics(target, "NPC R RearCalf [LrClf]")
-	else
-		CBPCPluginScript.StopPhysics(target, "NPC L FrontThigh")
-		CBPCPluginScript.StopPhysics(target, "NPC R FrontThigh")
-		CBPCPluginScript.StopPhysics(target, "NPC L RearThigh")
-		CBPCPluginScript.StopPhysics(target, "NPC R RearThigh")
-		CBPCPluginScript.StopPhysics(target, "NPC L RearCalf [LrClf]")
-		CBPCPluginScript.StopPhysics(target, "NPC R RearCalf [LrClf]")
-	endif
-endif
-endFunction
-
-function CBPCVagina(actor target, bool Pstop = false)
-if SMPVaginaApply
-	if !Pstop
-		CBPCPluginScript.StartPhysics(target, "NPC L Pussy02")
-		CBPCPluginScript.StartPhysics(target, "NPC R Pussy02")
-		CBPCPluginScript.StartPhysics(target, "NPC Pelvis [Pelv]")
-		CBPCPluginScript.StartPhysics(target, "VaginaB1")
-		CBPCPluginScript.StartPhysics(target, "Clitoral1")
-	else
-		CBPCPluginScript.StopPhysics(target, "NPC L Pussy02")
-		CBPCPluginScript.StopPhysics(target, "NPC R Pussy02")
-		CBPCPluginScript.StopPhysics(target, "NPC Pelvis [Pelv]")
-		CBPCPluginScript.StopPhysics(target, "VaginaB1")
-		CBPCPluginScript.StopPhysics(target, "Clitoral1")
-	endif
-endif
-endFunction
-
-function CBPCBelly(actor target, bool Pstop = false)
-if SMPBellyApply
-	if !Pstop
-		CBPCPluginScript.StartPhysics(target, "NPC Belly")
-	else
-		CBPCPluginScript.StopPhysics(target, "NPC Belly")
-	endif
-endif
-endFunction
-
-
 
 ;-- State -------------------------------------------
 state OPTION_Follower_B
@@ -571,8 +676,56 @@ state OPTION_Keymap_P
 	endFunction
 endState
 
-;-- State -------------------------------------------
-state OPTION_SMP_Breasts_Toggle
+
+state TRACKING_PREV_PAGE
+	event OnSelectST()
+		_trackingFilterPage -= 1
+        ForcePageReset()
+    endEvent
+    
+    event OnHighlightST()
+        SetInfoText("$TRACKINGPREVIOUSPAGE")
+    endEvent
+endState
+
+state TRACKING_NEXT_PAGE
+	event OnSelectST()
+		_trackingFilterPage += 1
+        ForcePageReset()
+    endEvent
+    
+    event OnHighlightST()
+        SetInfoText("$TRACKINGNEXTPAGE")
+    endEvent
+endState
+
+state OPTION_CBPCReset_Toggle
+	function OnSelectST()
+		(BHUNP3BController as BHUNP3BControllerscript).CBPCResetToggle = !(BHUNP3BController as BHUNP3BControllerscript).CBPCResetToggle
+		SetToggleOptionValueST((BHUNP3BController as BHUNP3BControllerscript).CBPCResetToggle)
+	endFunction
+	function OnHighlightST()
+		SetInfoText("$CBPCRESETTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_P_Gender_Toggle
+	function OnSelectST()
+		if PlayerGenderToggle == false
+			PlayerGenderToggle = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			PlayerGenderToggle = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+	endFunction
+	function OnHighlightST()
+		self.SetInfoText("$PGENDERTOGGLEINFO")
+	endFunction
+endState
+
+
+state OPTION_CBPC_Breasts_Toggle
 
 	function OnSelectST()
 
@@ -583,6 +736,248 @@ state OPTION_SMP_Breasts_Toggle
 			SMPBreastsApply = false
 			self.SetToggleOptionValueST(false, false, "")
 		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).BreastsSMP = SMPBreastsApply
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCBREASTSTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_CBPC_Butts_Toggle
+
+	function OnSelectST()
+
+		if SMPButtsApply == false
+			SMPButtsApply = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			SMPButtsApply = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).ButtsSMP = SMPButtsApply
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCBUTTSTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_CBPC_Legs_Toggle
+
+	function OnSelectST()
+
+		if SMPLegsApply == false
+			SMPLegsApply = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			SMPLegsApply = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).LegsSMP = SMPLegsApply
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCLEGSTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_CBPC_Belly_Toggle
+
+	function OnSelectST()
+
+		if SMPBellyApply == false
+			SMPBellyApply = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			SMPBellyApply = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).BellySMP = SMPBellyApply
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCBELLYTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_CBPC_Vagina_Toggle
+
+	function OnSelectST()
+
+		if SMPVaginaApply == false
+			SMPVaginaApply = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			SMPVaginaApply = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).VaginaSMP = SMPVaginaApply
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCVAGINATOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_CBPC_VaginaCollision_Toggle
+
+	function OnSelectST()
+
+		if SMPVaginaCollisionApply == false
+			SMPVaginaCollisionApply = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			SMPVaginaCollisionApply = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).VaginaCollisionSMP = SMPVaginaCollisionApply
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCVAGINACOLLISIONTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_PLAYERCBPC_Breasts_Toggle
+
+	function OnSelectST()
+
+		if CBPCBreastsPlayer == false
+			CBPCBreastsPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			CBPCBreastsPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).BreastsCBPC = CBPCBreastsPlayer
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCBREASTSTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_PLAYERCBPC_Butts_Toggle
+
+	function OnSelectST()
+
+		if CBPCButtsPlayer == false
+			CBPCButtsPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			CBPCButtsPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).ButtsCBPC = CBPCButtsPlayer
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCBUTTSTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_PLAYERCBPC_Legs_Toggle
+
+	function OnSelectST()
+
+		if CBPCLegsPlayer == false
+			CBPCLegsPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			CBPCLegsPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).LegsCBPC = CBPCLegsPlayer
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCLEGSTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_PLAYERCBPC_Belly_Toggle
+
+	function OnSelectST()
+
+		if CBPCBellyPlayer == false
+			CBPCBellyPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			CBPCBellyPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).BellyCBPC = CBPCBellyPlayer
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCBELLYTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_PLAYERCBPC_Vagina_Toggle
+
+	function OnSelectST()
+
+		if CBPCVaginaPlayer == false
+			CBPCVaginaPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			CBPCVaginaPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).VaginaCBPC = CBPCVaginaPlayer
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCVAGINATOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_PLAYERCBPC_VaginaCollision_Toggle
+
+	function OnSelectST()
+
+		if CBPCVaginaCollisionPlayer == false
+			CBPCVaginaCollisionPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			CBPCVaginaCollisionPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).VaginaCollisionCBPC = CBPCVaginaCollisionPlayer
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$CBPCVAGINACOLLISIONTOGGLEINFO")
+	endFunction
+endState
+
+state OPTION_SMP_Breasts_Toggle
+
+	function OnSelectST()
+
+		if SMPBreastsPlayer == false
+			SMPBreastsPlayer = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			SMPBreastsPlayer = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).PlayerBreastsSMP = SMPBreastsPlayer
 	endFunction
 
 	function OnHighlightST()
@@ -594,13 +989,15 @@ state OPTION_SMP_Butts_Toggle
 
 	function OnSelectST()
 
-		if SMPButtsApply == false
-			SMPButtsApply = true
+		if SMPButtsPlayer == false
+			SMPButtsPlayer = true
 			self.SetToggleOptionValueST(true, false, "")
 		else
-			SMPButtsApply = false
+			SMPButtsPlayer = false
 			self.SetToggleOptionValueST(false, false, "")
 		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).PlayerButtsSMP = SMPButtsPlayer
 	endFunction
 
 	function OnHighlightST()
@@ -612,13 +1009,15 @@ state OPTION_SMP_Legs_Toggle
 
 	function OnSelectST()
 
-		if SMPLegsApply == false
-			SMPLegsApply = true
+		;if SMPLegsPlayer == false
+			SMPLegsPlayer = true
 			self.SetToggleOptionValueST(true, false, "")
-		else
-			SMPLegsApply = false
-			self.SetToggleOptionValueST(false, false, "")
-		endIf
+		;else
+		;	SMPLegsPlayer = false
+		;	self.SetToggleOptionValueST(false, false, "")
+		;endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).PlayerLegsSMP = SMPLegsPlayer
 	endFunction
 
 	function OnHighlightST()
@@ -630,13 +1029,15 @@ state OPTION_SMP_Belly_Toggle
 
 	function OnSelectST()
 
-		if SMPBellyApply == false
-			SMPBellyApply = true
+		if SMPBellyPlayer == false
+			SMPBellyPlayer = true
 			self.SetToggleOptionValueST(true, false, "")
 		else
-			SMPBellyApply = false
+			SMPBellyPlayer = false
 			self.SetToggleOptionValueST(false, false, "")
 		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).PlayerBellySMP = SMPBellyPlayer
 	endFunction
 
 	function OnHighlightST()
@@ -648,13 +1049,15 @@ state OPTION_SMP_Vagina_Toggle
 
 	function OnSelectST()
 
-		if SMPVaginaApply == false
-			SMPVaginaApply = true
+		if SMPVaginaPlayer == false
+			SMPVaginaPlayer = true
 			self.SetToggleOptionValueST(true, false, "")
 		else
-			SMPVaginaApply = false
+			SMPVaginaPlayer = false
 			self.SetToggleOptionValueST(false, false, "")
 		endIf
+		
+		(BHUNP3BController as BHUNP3BControllerscript).PlayerVaginaSMP = SMPVaginaPlayer
 	endFunction
 
 	function OnHighlightST()
@@ -678,24 +1081,89 @@ state OPTION_NPC_Spell_Toggle
 	endFunction
 
 	function OnHighlightST()
-
 		self.SetInfoText(FSpellToggleInfo)
 	endFunction
 endState
 
+state OPTION_NPC_ClearSMP_Toggle
+
+	function OnSelectST()
+		Bool Continue
+		string msg
+		if ClearNPCSMPToggle == False
+			msg = "$FUSSCLEARCONFIRM"
+			continue = ShowMessage(msg, true, "$Yes", "$No")
+			ShowMessage(msg)
+			
+			If Continue == True
+				(BHUNP3BController as BHUNP3BControllerscript).TrackedActorRemoveall()
+			EndIf
+		endIf
+		ClearNPCSMPToggle != ClearNPCSMPToggle
+		self.SetToggleOptionValueST(ClearNPCSMPToggle, false, "")
+
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$FUSSCLEARINFO")
+	endFunction
+	
+endState
+
+state OPTION_DEBUGLOGGING_Toggle
+
+	function OnSelectST()
+		if DebugLogging == false
+			DebugLogging = true
+			(BHUNP3BController as BHUNP3BControllerscript).CheckLogging = true
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			DebugLogging = false
+			(BHUNP3BController as BHUNP3BControllerscript).CheckLogging = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$DEBUGLOGGINGINFO")
+	endFunction
+	
+endState
+
+state OPTION_P_RESET_Toggle
+
+	function OnSelectST()
+		if PSMPRESET == false
+			PSMPRESET = true
+			self.PlayerSMPReset()
+			self.SetToggleOptionValueST(true, false, "")
+		else
+			PSMPRESET = false
+			self.SetToggleOptionValueST(false, false, "")
+		endIf
+	endFunction
+
+	function OnHighlightST()
+		self.SetInfoText("$PSMPRESETINFO")
+	endFunction
+	
+endState
+
+
 ;-- State -------------------------------------------
-state option_use_object
+state OPTION_SMPCup
 
 	function OnMenuOpenST()
 
 		self.SetMenuDialogOptions(FnumString)
 		self.SetMenuDialogStartIndex(FnumIndex)
-		self.SetMenuDialogDefaultIndex(2)
+		self.SetMenuDialogDefaultIndex(0)
 	endFunction
 
 	function OnMenuAcceptST(Int index)
 
 		FnumIndex = index
+		(BHUNP3BController as BHUNP3BControllerscript).PlayerSMPCup = index
 		self.SetMenuOptionValueST(FnumString[FnumIndex], false, "")
 	endFunction
 endState
@@ -788,16 +1256,15 @@ endState
 state OPTION_PlayerSlot
 
 	function OnMenuOpenST()
-
-		self.SetMenuDialogOptions(SlotList)
+		self.SetMenuDialogOptions(PSlotList)
 		self.SetMenuDialogStartIndex(PsTIndex)
 		self.SetMenuDialogDefaultIndex(1)
 	endFunction
 
 	function OnMenuAcceptST(Int index)
-
 		PsTIndex = index
-		self.SetMenuOptionValueST(SlotList[PsTIndex], false, "")
+		self.SetMenuOptionValueST(PSlotList[PsTIndex], false, "")
+		ForcePageReset()
 	endFunction
 endState
 
@@ -864,6 +1331,7 @@ state OPTION_Follower_C
 endState
 
 ;-- State -------------------------------------------
+
 state OPTION_P_Spell_Toggle
 
 	function OnSelectST()

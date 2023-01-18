@@ -1,14 +1,16 @@
 Scriptname OSmpBHUNPScript extends Quest
 
-actor partner
-actor secondPartner
+actor DomActor
+actor SubActor
+actor ThirdActor
 
-bool playerIsFemale = false
-bool partnerIsFemale = false
-bool secondPartnerIsFemale = false
+bool DomActorIsFemale = false
+bool SubActorIsFemale = false
+bool ThirdActorIsFemale = false
 
-bool partnerHadSMP = false
-bool secondPartnerHadSMP = false
+bool DomActorHadSMP = false
+bool SubActorHadSMP = false
+bool ThirdActorHadSMP = false
 
 armor NPCMain48
 armor NPCMain50
@@ -16,58 +18,77 @@ armor NPCMain51
 armor NPCMain60
 int bhunpMcmSmpIndex = 0
 
+Armor CurrentSMPArmor
 
-event oninit()
-	ostim = OUtils.GetOStim()
-	registerformodevent("ostim_start", "OstimStart")
-	registerformodevent("ostim_thirdactor_join", "OstimThirdJoin")
-	registerformodevent("ostim_thirdactor_leave", "OstimThirdLeave")
-	registerformodevent("ostim_end", "OstimEnd")
+Actor property PlayerRef auto
+
+OSmpBHUNPMCMScript property OsmpMCM auto
+
+BHUNPAddonMCM property MCM auto
+BHUNP3BControllerScript property BHUNP3BController auto
+
+OsexIntegrationMain property OStim auto
+
+
+; ███████╗██╗   ██╗███████╗███╗   ██╗████████╗███████╗
+; ██╔════╝██║   ██║██╔════╝████╗  ██║╚══██╔══╝██╔════╝
+; █████╗  ██║   ██║█████╗  ██╔██╗ ██║   ██║   ███████╗
+; ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║╚██╗██║   ██║   ╚════██║
+; ███████╗ ╚████╔╝ ███████╗██║ ╚████║   ██║   ███████║
+; ╚══════╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝
+
+
+event OnInit()
+	OStim = OUtils.GetOStim()
+	RegisterForModEvent("ostim_start", "OstimStart")
+	RegisterForModEvent("ostim_thirdactor_join", "OstimThirdJoin")
+	RegisterForModEvent("ostim_thirdactor_leave", "OstimThirdLeave")
+	RegisterForModEvent("ostim_end", "OstimEnd")
+
+	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
+
+	PrintToConsole("Installed!")
 endevent
 
 
 function HandleModEvents()
-	unregisterForAllModEvents()
+	UnregisterForAllModEvents()
 
-	ostim = OUtils.GetOStim()
+	OStim = OUtils.GetOStim()
 
-	registerformodevent("ostim_start", "OstimStart")
-	registerformodevent("ostim_thirdactor_join", "OstimThirdJoin")
-	registerformodevent("ostim_thirdactor_leave", "OstimThirdLeave")
-	registerformodevent("ostim_end", "OstimEnd")
+	RegisterForModEvent("ostim_start", "OstimStart")
+	RegisterForModEvent("ostim_thirdactor_join", "OstimThirdJoin")
+	RegisterForModEvent("ostim_thirdactor_leave", "OstimThirdLeave")
+	RegisterForModEvent("ostim_end", "OstimEnd")
 
 	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
+
+	PrintToConsole("Finished loading")
 endfunction
 
 
 event OstimStart(string eventname, string strarg, float numarg, form sender)
 	; if OSmp is disabled in MCM or player is not in scene, don't run this event
 	; OSmp won't run on NPC scenes
-	if !ostim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
+	if !OStim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
 		return
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Starting...")
+	PrintToConsole("Starting...")
 
-	actor dom = ostim.GetDomActor()
-	actor sub = ostim.GetSubActor()
-	secondPartner = ostim.GetThirdActor()
+	DomActor = OStim.GetActor(0)
+	SubActor = OStim.GetActor(1)
+	ThirdActor = OStim.GetActor(2)
 
-	if dom == PlayerRef
-		partner = sub
-	else
-		partner = dom
-	endif
+	DomActorHadSMP = isActorSMP(DomActor)
+	DomActorIsFemale = OStim.AppearsFemale(DomActor)
 
-	bool playerHadSMP = isActorSMP(PlayerRef)
-	playerIsFemale = ostim.isFemale(PlayerRef)
+	SubActorHadSMP = isActorSMP(SubActor)
+	SubActorIsFemale = OStim.AppearsFemale(SubActor)
 
-	partnerIsFemale = ostim.isFemale(partner)
-	partnerHadSMP = isActorSMP(partner)
-
-	if secondPartner != none
-		secondPartnerIsFemale = ostim.isFemale(secondPartner)
-		secondPartnerHadSMP = isActorSMP(secondPartner)
+	if ThirdActor != none
+		ThirdActorHadSMP = isActorSMP(ThirdActor)
+		ThirdActorIsFemale = OStim.AppearsFemale(ThirdActor)
 	endif
 
 	; Due to OStim scene setup being a script heavy process
@@ -77,45 +98,45 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 	; I tested this extensively and the only way to avoid SMP failure is by using this wait
 	Utility.Wait(1)
 
-	if (partnerIsFemale && !partnerHadSMP)
-		EquipSmpForActor(partner)
+	if (DomActorIsFemale && !DomActorHadSMP)
+		EquipSmpForActor(DomActor)
 	endif
 
-	if (secondPartner != none && secondPartnerIsFemale && !secondPartnerHadSMP)
-		EquipSmpForActor(secondPartner)
+	if (SubActor != none && SubActorIsFemale && !SubActorHadSMP)
+		EquipSmpForActor(SubActor)
 	endif
 
-	if (playerIsFemale && !playerHadSMP)
-		EquipSmpForPlayer()
+	if (ThirdActor != none && ThirdActorIsFemale && !ThirdActorHadSMP)
+		EquipSmpForActor(ThirdActor)
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Finished!")
+	PrintToConsole("Finished!")
 endevent
 
 
 event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
 	; if OSmp is disabled in MCM or player is not in scene, don't run this event
 	; OSmp won't run on NPC scenes
-	if !ostim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
+	if !OStim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
 		return
 	endif
 
-	secondPartner = ostim.GetThirdActor()
-	secondPartnerIsFemale = ostim.isFemale(secondPartner)
-	secondPartnerHadSMP = isActorSMP(secondPartner)
+	ThirdActor = OStim.GetActor(2)
+	ThirdActorIsFemale = OStim.AppearsFemale(ThirdActor)
+	ThirdActorHadSMP = isActorSMP(ThirdActor)
 
-	if (secondPartnerIsFemale && !secondPartnerHadSMP)
-		EquipSmpForActor(secondPartner)
+	if (ThirdActorIsFemale && !ThirdActorHadSMP)
+		EquipSmpForActor(ThirdActor)
 	endif
 
 endevent
 
 
 event OstimThirdLeave(string eventname, string strarg, float numarg, form sender)
-	if (secondPartnerIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from " + secondPartner.GetActorBase().GetName() + "...")
-		MCM.NPCSMP(secondPartner, OsmpMCM.smpCupIndex)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
+	if (ThirdActorIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !ThirdActorHadSMP) && isActorSMP(ThirdActor))
+		PrintToConsole("Removing SMP from " + ThirdActor.GetActorBase().GetName() + "...")
+		MCM.NPCSMP(ThirdActor, OsmpMCM.smpCupIndex)
+		PrintToConsole("SMP cleaned from " + ThirdActor.GetActorBase().GetName())
 	endif
 endevent
 
@@ -123,102 +144,124 @@ endevent
 event OstimEnd(string eventname, string strarg, float numarg, form sender)
 	; if numArg is not -1, it's a scene running on a subthread, and therefore an NPC scene
 	if (numarg != -1)
-		; a bug in OStim causes actors in main thread to redress if subthread scene ends
-		; so undress them again
-		OUndressScript oundress = ostim.GetUndressScript()
-		if partner != none
-			; wait for the redress to complete
-			Utility.wait(2)
-			; and then undress
-			form[] partnerClothes = oundress.storeequipmentforms(partner, true)
-			oundress.UnequipForms(partner, partnerClothes)
-		endif
-		if secondPartner != none
-			form[] secondPartnerClothes = oundress.storeequipmentforms(secondPartner, true)
-			oundress.UnequipForms(secondPartner, secondPartnerClothes)
-		endif
 		return
 	endif
 
-	; however, there can be an NPC scene in main thread, so this check is also needed
-	; if player is not in scene, skip, OSmp won't run on NPC scenes
-	if !ostim.isPlayerInvolved()
-		return
+	PrintToConsole("Checking if any actors need SMP cleaning...")
+
+	if DomActorIsFemale && isActorSMP(DomActor)
+		RemoveSmpFromActor(DomActor, DomActorHadSMP)
 	endif
 
-	OsexIntegrationMain.Console("OSmp: Checking if any actors need SMP cleaning...")
-
-	if (playerIsFemale && !OsmpMCM.toggleKeepPlayerSMP && isActorSMP(PlayerRef))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from player character...")
-		MCM.PlayerSMP()
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from player character")
+	if SubActor && SubActorIsFemale && isActorSMP(SubActor)
+		RemoveSmpFromActor(SubActor, SubActorHadSMP)
 	endif
 
-	if (partnerIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !partnerHadSMP) && isActorSMP(partner))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from " + partner.GetActorBase().GetName() + "...")
-		MCM.NPCSMP(partner, OsmpMCM.smpCupIndex)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + partner.GetActorBase().GetName())
-	endif
-
-	if (secondPartner != none && secondPartnerIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !secondPartnerHadSMP) && isActorSMP(secondPartner))
-		OsexIntegrationMain.Console("OSmp: Removing SMP from " + secondPartner.GetActorBase().GetName() + "...")
-		MCM.NPCSMP(secondPartner, OsmpMCM.smpCupIndex)
-		OsexIntegrationMain.Console("OSmp: SMP cleaned from " + secondPartner.GetActorBase().GetName())
+	if ThirdActor && ThirdActorIsFemale && isActorSMP(ThirdActor)
+		RemoveSmpFromActor(ThirdActor, ThirdActorHadSMP)
 	endif
 endevent
 
 
+
+;  ██████╗██████╗ ██████╗  ██████╗    ███████╗██╗   ██╗███╗   ██╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗███████╗
+; ██╔════╝██╔══██╗██╔══██╗██╔════╝    ██╔════╝██║   ██║████╗  ██║██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔════╝
+; ██║     ██████╔╝██████╔╝██║         █████╗  ██║   ██║██╔██╗ ██║██║        ██║   ██║██║   ██║██╔██╗ ██║███████╗
+; ██║     ██╔══██╗██╔═══╝ ██║         ██╔══╝  ██║   ██║██║╚██╗██║██║        ██║   ██║██║   ██║██║╚██╗██║╚════██║
+; ╚██████╗██████╔╝██║     ╚██████╗    ██║     ╚██████╔╝██║ ╚████║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║███████║
+;  ╚═════╝╚═════╝ ╚═╝      ╚═════╝    ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+
+
+function StopCbpcForActor(Actor act)
+	BHUNP3BController.CBPCBreasts(act, true)
+	BHUNP3BController.CBPCButts(act, true)
+	BHUNP3BController.CBPCBelly(act, true)
+	BHUNP3BController.CBPCVagina(act, true)
+	BHUNP3BController.CBPCVaginaCollision(act, true)
+	BHUNP3BController.CBPCThigh(act, true)
+endfunction
+
+
+function StopCbpcForPlayer()
+	BHUNP3BController.CBPCBreastsPlayer(PlayerRef, true)
+	BHUNP3BController.CBPCButtsPlayer(PlayerRef, true)
+	BHUNP3BController.CBPCBellyPlayer(PlayerRef, true)
+	BHUNP3BController.CBPCVaginaPlayer(PlayerRef, true)
+	BHUNP3BController.CBPCVaginaCollisionPlayer(PlayerRef, true)
+	BHUNP3BController.CBPCThighPlayer(PlayerRef, true)
+endfunction
+
+
+; ███████╗███╗   ███╗██████╗     ███████╗██╗   ██╗███╗   ██╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗███████╗
+; ██╔════╝████╗ ████║██╔══██╗    ██╔════╝██║   ██║████╗  ██║██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔════╝
+; ███████╗██╔████╔██║██████╔╝    █████╗  ██║   ██║██╔██╗ ██║██║        ██║   ██║██║   ██║██╔██╗ ██║███████╗
+; ╚════██║██║╚██╔╝██║██╔═══╝     ██╔══╝  ██║   ██║██║╚██╗██║██║        ██║   ██║██║   ██║██║╚██╗██║╚════██║
+; ███████║██║ ╚═╝ ██║██║         ██║     ╚██████╔╝██║ ╚████║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║███████║
+; ╚══════╝╚═╝     ╚═╝╚═╝         ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+
+
 bool function isActorSMP(actor partnerSMP)
-	bool isSMP = partnerSMP.isinfaction(MCM.BHUNPSMPFaction)
+	bool isSMP = partnerSMP.IsInFaction(MCM.BHUNPSMPFaction)
 
 	String partnerName = partnerSMP.GetActorBase().GetName()
 
 	if isSMP
-		OsexIntegrationMain.Console("OSmp: " + partnerName + " is in SMP mode")
+		PrintToConsole(partnerName + " is in SMP mode")
 	else
-		OsexIntegrationMain.Console("OSmp: " + partnerName + " is in CBPC mode")
+		PrintToConsole(partnerName + " is in CBPC mode")
 	endif
 
 	return isSMP
 endfunction
 
 
-function StopCbpcForActor(Actor act)
-	MCM.CBPCBreasts(act, true)
-	MCM.CBPCButts(act, true)
-	MCM.CBPCBelly(act, true)
-	MCM.CBPCVagina(act, true)
-	MCM.CBPCThigh(act, true)
-endfunction
-
-
 function EquipSmpForPlayer()
-	OsexIntegrationMain.Console("OSmp: Applying SMP to player character ...")
-
-	StopCbpcForActor(PlayerRef)
+	PrintToConsole("Applying SMP to player character ...")
 
 	int PlayerSMPIndex = MCM.PsTIndex
 
-	if MCM.SlotList[PlayerSMPIndex] == MCM.S48
-		PlayerRef.EquipItem(MCM.SMP3BONObjectP48 as form, true, true)
-	elseIf MCM.SlotList[PlayerSMPIndex] == MCM.S50
-		PlayerRef.EquipItem(MCM.SMP3BONObjectP50 as form, true, true)
-	elseIf MCM.SlotList[PlayerSMPIndex] == MCM.S51
-		PlayerRef.EquipItem(MCM.SMP3BONObjectP51 as form, true, true)
-	elseIf MCM.SlotList[PlayerSMPIndex] == MCM.S60
-		PlayerRef.EquipItem(MCM.SMP3BONObjectP60 as form, true, true)
-	endIf
-
 	PlayerRef.addtofaction(MCM.BHUNPSMPFaction)
+
+	if MCM.PSlotList[PlayerSMPIndex] == MCM.S69
+		StopCbpcForPlayer()
+		SetCurrentSMPArmor(PlayerRef)
+		PlayerRef.EquipItem(CurrentSMPArmor as form, true, true)
+		PlayerRef.SetFactionRank(MCM.BHUNPSMPFaction, 5)
+	else
+		StopCbpcForActor(PlayerRef)
+
+		if MCM.PSlotList[PlayerSMPIndex] == MCM.S48
+			PlayerRef.EquipItem(MCM.SMP3BONObjectP48 as form, true, true)
+			PlayerRef.SetFactionRank(MCM.BHUNPSMPFaction, 1)
+
+		elseIf MCM.PSlotList[PlayerSMPIndex] == MCM.S50
+			PlayerRef.EquipItem(MCM.SMP3BONObjectP50 as form, true, true)
+			PlayerRef.SetFactionRank(MCM.BHUNPSMPFaction, 2)
+
+		elseIf MCM.PSlotList[PlayerSMPIndex] == MCM.S51
+			PlayerRef.EquipItem(MCM.SMP3BONObjectP51 as form, true, true)
+			PlayerRef.SetFactionRank(MCM.BHUNPSMPFaction, 3)
+
+		elseIf MCM.PSlotList[PlayerSMPIndex] == MCM.S60
+			PlayerRef.EquipItem(MCM.SMP3BONObjectP60 as form, true, true)
+			PlayerRef.SetFactionRank(MCM.BHUNPSMPFaction, 4)
+
+		endif
+	endif
 
 	PlayerRef.QueueNiNodeUpdate()
 
-	OsexIntegrationMain.Console("OSmp: SMP applied to player character")
+	PrintToConsole("SMP applied to player character")
 endfunction
 
 
 function EquipSmpForActor(Actor act)
-	OsexIntegrationMain.Console("OSmp: Applying SMP to " + act.GetActorBase().GetName() + "...")
+	if (act == PlayerRef)
+		EquipSmpForPlayer()
+		return
+	endif
+
+	PrintToConsole("Applying SMP to " + act.GetActorBase().GetName() + "...")
 
 	StopCbpcForActor(act)
 
@@ -242,22 +285,64 @@ function EquipSmpForActor(Actor act)
 
 	UpdateNPCSmpArmorForms(cupSizeToUse)
 
+	act.addtofaction(MCM.BHUNPSMPFaction)
+
 	if MCM.SlotList[bhunpMcmSmpIndex] == MCM.S48
 		act.EquipItem(NPCMain48 as form, true, true)
+		act.setfactionrank(MCM.BHUNPSMPFaction, 1)
 	elseIf MCM.SlotList[bhunpMcmSmpIndex] == MCM.S50
 		act.EquipItem(NPCMain50 as form, true, true)
+		act.setfactionrank(MCM.BHUNPSMPFaction, 2)
 	elseIf MCM.SlotList[bhunpMcmSmpIndex] == MCM.S51
 		act.EquipItem(NPCMain51 as form, true, true)
+		act.setfactionrank(MCM.BHUNPSMPFaction, 3)
 	elseIf MCM.SlotList[bhunpMcmSmpIndex] == MCM.S60
 		act.EquipItem(NPCMain60 as form, true, true)
+		act.setfactionrank(MCM.BHUNPSMPFaction, 4)
 	endIf
 
-	act.addtofaction(MCM.BHUNPSMPFaction)
+	BHUNP3BController.TrackedActorAdd(act)
 
 	act.QueueNiNodeUpdate()
 
-	OsexIntegrationMain.Console("OSmp: SMP applied to " + act.GetActorBase().GetName() + " with cup size " + cupSizeToUse)
+	PrintToConsole("SMP applied to " + act.GetActorBase().GetName() + " with cup size " + cupSizeToUse)
 endfunction
+
+
+function RemoveSmpFromActor(Actor act, bool hadSmp)
+	if act == PlayerRef
+		if !OsmpMCM.toggleKeepPlayerSMP
+			PrintToConsole("Removing SMP from player character...")
+
+			MCM.PlayerSMP()
+
+			if MCM.PSlotList[MCM.PsTIndex] == MCM.S69
+				PlayerRef.RemoveItem(CurrentSMPArmor, 99, true, none)
+			endif
+
+			PrintToConsole("SMP cleaned from player character")
+		endif
+	else
+		if !OSmpMCM.toggleKeepNPCSMP || !hadSmp
+			PrintToConsole("Removing SMP from " + act.GetActorBase().GetName() + "...")
+			MCM.NPCSMP(act, OsmpMCM.smpCupIndex)
+			PrintToConsole("SMP cleaned from " + act.GetActorBase().GetName())
+		endif
+	endif
+endFunction
+
+
+; ██╗   ██╗████████╗██╗██╗     ███████╗
+; ██║   ██║╚══██╔══╝██║██║     ██╔════╝
+; ██║   ██║   ██║   ██║██║     ███████╗
+; ██║   ██║   ██║   ██║██║     ╚════██║
+; ╚██████╔╝   ██║   ██║███████╗███████║
+;  ╚═════╝    ╚═╝   ╚═╝╚══════╝╚══════╝
+
+
+function PrintToConsole(String In)
+	MiscUtil.PrintConsole("OSmp: " + In)
+endFunction
 
 
 function UpdateNPCSmpArmorForms(int cupSize)
@@ -289,7 +374,157 @@ function UpdateNPCSmpArmorForms(int cupSize)
 endfunction
 
 
-OsexIntegrationMain property ostim auto
-actor property playerref auto
-BHUNPAddonMCM property MCM auto
-OSmpBHUNPMCMScript property OsmpMCM auto
+function SetCurrentSMPArmor(actor akactor)
+
+	int PlayerSMPCup = BHUNP3BController.PlayerSMPCup
+
+	bool PlayerBreastsSMP = BHUNP3BController.PlayerBreastsSMP
+	bool PlayerButtsSMP = BHUNP3BController.PlayerButtsSMP
+	bool PlayerVaginaSMP = BHUNP3BController.PlayerVaginaSMP
+	bool PlayerBellySMP = BHUNP3BController.PlayerBellySMP
+
+	if PlayerSMPCup == 0; Acup
+	
+		if PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupFull60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBellyVBB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBellyBBV60
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBBB60
+		elseif PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBBV60
+	
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBellyB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBellyBB60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupButtsBelly60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBellyV60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBV60
+			
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupB60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupButts60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupV60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectAcupBelly60
+		endif
+			
+	elseif PlayerSMPCup == 1; Bcup
+	
+		if PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupFull60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBellyVBB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBellyBBV60
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBBB60
+		elseif PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBBV60
+	
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBellyB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBellyBB60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupButtsBelly60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBellyV60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBV60
+			
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupB60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupButts60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupV60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectBcupBelly60
+		endif
+	
+	elseif PlayerSMPCup == 2; Ccup
+	
+		if PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupFull60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBellyVBB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBellyBBV60
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBBB60
+		elseif PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBBV60
+	
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBellyB60
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBellyBB60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupButtsBelly60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBellyV60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBV60
+			
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupB60
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupButts60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupV60
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectCcupBelly60
+		endif
+	
+	elseif PlayerSMPCup == 3; Dcup
+	
+		if PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupFull60;BaseShapeFull.xml
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBellyVBB60;BaseShape3A.xml
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBellyBBV60;BaseShape3B.xml
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBBB60;BaseShape3C.xml
+		elseif PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBBV60;BaseShape3D.xml
+	
+		elseif PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBB60;BaseShape2A.xml
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBellyB60;BaseShape2B.xml
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBellyBB60;BaseShape2C.xml
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupButtsBelly60;BaseShape2D.xml
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBellyV60;BaseShape2E.xml
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBV60;BaseShape2F.xml
+			
+		elseif PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupB60;BaseShape1A.xml
+		elseif !PlayerBreastsSMP && PlayerButtsSMP && !PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupButts60;BaseShape1B.xml
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && PlayerVaginaSMP && !PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupV60;BaseShape1C.xml
+		elseif !PlayerBreastsSMP && !PlayerButtsSMP && !PlayerVaginaSMP && PlayerBellySMP
+			CurrentSMPArmor = BHUNP3BController.SMP3BONObjectDcupBelly60;BaseShape1D.xml
+		endif
+	endif
+EndFunction
