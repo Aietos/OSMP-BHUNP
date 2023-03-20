@@ -1,16 +1,10 @@
 Scriptname OSmpBHUNPScript extends Quest
 
-actor DomActor
-actor SubActor
-actor ThirdActor
+; where female NPCs will be stored
+actor[] SceneActors
 
-bool DomActorIsFemale = false
-bool SubActorIsFemale = false
-bool ThirdActorIsFemale = false
-
-bool DomActorHadSMP = false
-bool SubActorHadSMP = false
-bool ThirdActorHadSMP = false
+; where female NPCs who already had SMP applied will be stored
+actor[] SceneActorsHadSMP
 
 armor NPCMain48
 armor NPCMain50
@@ -41,8 +35,8 @@ OsexIntegrationMain property OStim auto
 event OnInit()
 	OStim = OUtils.GetOStim()
 	RegisterForModEvent("ostim_start", "OstimStart")
-	RegisterForModEvent("ostim_thirdactor_join", "OstimThirdJoin")
-	RegisterForModEvent("ostim_thirdactor_leave", "OstimThirdLeave")
+	RegisterForModEvent("ostim_actor_join", "OstimActorJoin")
+	RegisterForModEvent("ostim_actor_leave", "OstimActorLeave")
 	RegisterForModEvent("ostim_end", "OstimEnd")
 
 	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
@@ -57,8 +51,8 @@ function HandleModEvents()
 	OStim = OUtils.GetOStim()
 
 	RegisterForModEvent("ostim_start", "OstimStart")
-	RegisterForModEvent("ostim_thirdactor_join", "OstimThirdJoin")
-	RegisterForModEvent("ostim_thirdactor_leave", "OstimThirdLeave")
+	RegisterForModEvent("ostim_actor_join", "OstimActorJoin")
+	RegisterForModEvent("ostim_actor_leave", "OstimActorLeave")
 	RegisterForModEvent("ostim_end", "OstimEnd")
 
 	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
@@ -68,98 +62,112 @@ endfunction
 
 
 event OstimStart(string eventname, string strarg, float numarg, form sender)
-	; if OSmp is disabled in MCM or player is not in scene, don't run this event
-	; OSmp won't run on NPC scenes
-	if !OStim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
+	; if OSmp is disabled, don't run this event
+	if OsmpMCM.toggleDisableOSmp
 		return
 	endif
 
 	PrintToConsole("Starting...")
 
-	DomActor = OStim.GetActor(0)
-	SubActor = OStim.GetActor(1)
-	ThirdActor = OStim.GetActor(2)
+	SceneActors = PapyrusUtil.ResizeActorArray(SceneActors, 0)
+	SceneActorsHadSMP = PapyrusUtil.ResizeActorArray(SceneActorsHadSMP, 0)
 
-	DomActorHadSMP = isActorSMP(DomActor)
-	DomActorIsFemale = OStim.AppearsFemale(DomActor)
+	actor[] ActorsInScene = OStim.GetActors()
 
-	SubActorHadSMP = isActorSMP(SubActor)
-	SubActorIsFemale = OStim.AppearsFemale(SubActor)
+	actor currentActor
 
-	if ThirdActor != none
-		ThirdActorHadSMP = isActorSMP(ThirdActor)
-		ThirdActorIsFemale = OStim.AppearsFemale(ThirdActor)
-	endif
+	int i = ActorsInScene.Length
 
-	; Due to OStim scene setup being a script heavy process
+	bool currentActorHadSMP
+
+	; Due to OStim scene setup being a somewhat script heavy process
 	; SMP may fail to apply if we don't use this wait
 	; This doesn't happen in 3BA version because CBBE 3BA resets the bones nodes when SMP is toggled on
 	; BHUNP doesn't do the same process for some reason
 	; I tested this extensively and the only way to avoid SMP failure is by using this wait
 	Utility.Wait(1)
 
-	if (DomActorIsFemale && !DomActorHadSMP)
-		EquipSmpForActor(DomActor)
-	endif
+	while i
+		i -= 1
 
-	if (SubActor != none && SubActorIsFemale && !SubActorHadSMP)
-		EquipSmpForActor(SubActor)
-	endif
+		currentActor = ActorsInScene[i]
 
-	if (ThirdActor != none && ThirdActorIsFemale && !ThirdActorHadSMP)
-		EquipSmpForActor(ThirdActor)
-	endif
+		if OStim.AppearsFemale(currentActor)
+			SceneActors = PapyrusUtil.PushActor(SceneActors, currentActor)
+			currentActorHadSMP = isActorSMP(currentActor)
+
+			if currentActorHadSMP
+				SceneActorsHadSMP = PapyrusUtil.PushActor(SceneActorsHadSMP, currentActor)
+			else
+				EquipSmpForActor(currentActor)
+			endif
+		endif
+	endWhile
 
 	PrintToConsole("Finished!")
 endevent
 
 
-event OstimThirdJoin(string eventname, string strarg, float numarg, form sender)
-	; if OSmp is disabled in MCM or player is not in scene, don't run this event
-	; OSmp won't run on NPC scenes
-	if !OStim.isPlayerInvolved() || OsmpMCM.toggleDisableOSmp
+event OstimActorJoin(string eventname, string strarg, float numarg, form sender)
+	actor joinedActor = sender as actor
+
+	; if OSmp is disabled in MCM or actor is not female, don't run this event
+	if OsmpMCM.toggleDisableOSmp || !OStim.AppearsFemale(joinedActor)
 		return
 	endif
 
-	ThirdActor = OStim.GetActor(2)
-	ThirdActorIsFemale = OStim.AppearsFemale(ThirdActor)
-	ThirdActorHadSMP = isActorSMP(ThirdActor)
+	SceneActors = PapyrusUtil.PushActor(SceneActors, joinedActor)
 
-	if (ThirdActorIsFemale && !ThirdActorHadSMP)
-		EquipSmpForActor(ThirdActor)
+	bool joinedActorHadSMP = isActorSMP(joinedActor)
+
+	if joinedActorHadSMP
+		SceneActorsHadSMP = PapyrusUtil.PushActor(SceneActorsHadSMP, joinedActor)
+	else
+		EquipSmpForActor(joinedActor)
 	endif
 
 endevent
 
 
-event OstimThirdLeave(string eventname, string strarg, float numarg, form sender)
-	if (ThirdActorIsFemale && (!OSmpMCM.toggleKeepNPCSMP || !ThirdActorHadSMP) && isActorSMP(ThirdActor))
-		PrintToConsole("Removing SMP from " + ThirdActor.GetActorBase().GetName() + "...")
-		MCM.NPCSMP(ThirdActor, OsmpMCM.smpCupIndex)
-		PrintToConsole("SMP cleaned from " + ThirdActor.GetActorBase().GetName())
+event OstimActorLeave(string eventname, string strarg, float numarg, form sender)
+	actor actorToRemove = sender as actor
+
+	if OStim.AppearsFemale(actorToRemove)
+		bool actorHadSmp = SceneActorsHadSMP.Find(actorToRemove) >= 0
+
+		if (!OSmpMCM.toggleKeepNPCSMP || !actorHadSmp) && isActorSMP(actorToRemove)
+			PrintToConsole("Removing SMP from " + actorToRemove.GetActorBase().GetName() + "...")
+
+			MCM.NPCSMP(actorToRemove, OsmpMCM.smpCupIndex)
+
+			PrintToConsole("SMP cleaned from " + actorToRemove.GetActorBase().GetName())
+		endif
+
+		SceneActors = PapyrusUtil.RemoveActor(SceneActors, actorToRemove)
+		SceneActorsHadSMP = PapyrusUtil.RemoveActor(SceneActorsHadSMP, actorToRemove)
 	endif
 endevent
 
 
 event OstimEnd(string eventname, string strarg, float numarg, form sender)
-	; if numArg is not -1, it's a scene running on a subthread, and therefore an NPC scene
-	if (numarg != -1)
-		return
-	endif
-
 	PrintToConsole("Checking if any actors need SMP cleaning...")
 
-	if DomActorIsFemale && isActorSMP(DomActor)
-		RemoveSmpFromActor(DomActor, DomActorHadSMP)
-	endif
+	int i = SceneActors.Length
 
-	if SubActor && SubActorIsFemale && isActorSMP(SubActor)
-		RemoveSmpFromActor(SubActor, SubActorHadSMP)
-	endif
+	actor currentActor
 
-	if ThirdActor && ThirdActorIsFemale && isActorSMP(ThirdActor)
-		RemoveSmpFromActor(ThirdActor, ThirdActorHadSMP)
-	endif
+	while i
+		i -= 1
+
+		currentActor = SceneActors[i]
+
+		if isActorSMP(currentActor)
+			RemoveSmpFromActor(currentActor, SceneActorsHadSMP.Find(currentActor) >= 0)
+		endif
+	endwhile
+
+	SceneActors = PapyrusUtil.ResizeActorArray(SceneActors, 0)
+	SceneActorsHadSMP = PapyrusUtil.ResizeActorArray(SceneActorsHadSMP, 0)
 endevent
 
 
