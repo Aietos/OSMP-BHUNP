@@ -35,8 +35,6 @@ OsexIntegrationMain property OStim auto
 event OnInit()
 	OStim = OUtils.GetOStim()
 	RegisterForModEvent("ostim_start", "OstimStart")
-	RegisterForModEvent("ostim_actor_join", "OstimActorJoin")
-	RegisterForModEvent("ostim_actor_leave", "OstimActorLeave")
 	RegisterForModEvent("ostim_end", "OstimEnd")
 
 	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
@@ -51,8 +49,6 @@ function HandleModEvents()
 	OStim = OUtils.GetOStim()
 
 	RegisterForModEvent("ostim_start", "OstimStart")
-	RegisterForModEvent("ostim_actor_join", "OstimActorJoin")
-	RegisterForModEvent("ostim_actor_leave", "OstimActorLeave")
 	RegisterForModEvent("ostim_end", "OstimEnd")
 
 	UpdateNPCSmpArmorForms(OsmpMCM.smpCupIndex)
@@ -72,7 +68,7 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 	SceneActors = PapyrusUtil.ResizeActorArray(SceneActors, 0)
 	SceneActorsHadSMP = PapyrusUtil.ResizeActorArray(SceneActorsHadSMP, 0)
 
-	actor[] ActorsInScene = OStim.GetActors()
+	actor[] ActorsInScene = OThread.GetActors(0)
 
 	actor currentActor
 
@@ -105,47 +101,6 @@ event OstimStart(string eventname, string strarg, float numarg, form sender)
 	endWhile
 
 	PrintToConsole("Finished!")
-endevent
-
-
-event OstimActorJoin(string eventname, string strarg, float numarg, form sender)
-	actor joinedActor = sender as actor
-
-	; if OSmp is disabled in MCM or actor is not female, don't run this event
-	if OsmpMCM.toggleDisableOSmp || !OStim.AppearsFemale(joinedActor)
-		return
-	endif
-
-	SceneActors = PapyrusUtil.PushActor(SceneActors, joinedActor)
-
-	bool joinedActorHadSMP = isActorSMP(joinedActor)
-
-	if joinedActorHadSMP
-		SceneActorsHadSMP = PapyrusUtil.PushActor(SceneActorsHadSMP, joinedActor)
-	else
-		EquipSmpForActor(joinedActor)
-	endif
-
-endevent
-
-
-event OstimActorLeave(string eventname, string strarg, float numarg, form sender)
-	actor actorToRemove = sender as actor
-
-	if OStim.AppearsFemale(actorToRemove)
-		bool actorHadSmp = SceneActorsHadSMP.Find(actorToRemove) >= 0
-
-		if (!OSmpMCM.toggleKeepNPCSMP || !actorHadSmp) && isActorSMP(actorToRemove)
-			PrintToConsole("Removing SMP from " + actorToRemove.GetActorBase().GetName() + "...")
-
-			MCM.NPCSMP(actorToRemove, OsmpMCM.smpCupIndex)
-
-			PrintToConsole("SMP cleaned from " + actorToRemove.GetActorBase().GetName())
-		endif
-
-		SceneActors = PapyrusUtil.RemoveActor(SceneActors, actorToRemove)
-		SceneActorsHadSMP = PapyrusUtil.RemoveActor(SceneActorsHadSMP, actorToRemove)
-	endif
 endevent
 
 
